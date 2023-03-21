@@ -19,28 +19,28 @@ describe("Assignment 1 Part 2", () => {
         });
     });
 
-    // describe("isPaired", () => {
-    //     it("returns true for a string with paired parens", () => {
-    //         expect(isPaired("([{}])")).toBe(true);
-    //     });
-    //     it("returns true for a string with paired parens", () => {
-    //         expect(isPaired("This is ([some]) {text}.")).toBe(true);
-    //     });
-    //     it("returns true for a string with paired parens", () => {
-    //         expect(isPaired("No parens, no problems.")).toBe(true);
-    //     });
-    //     it("returns true for a string with paired parens", () => {
-    //         expect(isPaired("[](){}")).toBe(true);
-    //     });
+    describe("isPaired", () => {
+        it("returns true for a string with paired parens", () => {
+            expect(isPaired("([{}])")).toBe(true);
+        });
+        it("returns true for a string with paired parens", () => {
+            expect(isPaired("This is ([some]) {text}.")).toBe(true);
+        });
+        it("returns true for a string with paired parens", () => {
+            expect(isPaired("No parens, no problems.")).toBe(true);
+        });
+        it("returns true for a string with paired parens", () => {
+            expect(isPaired("[](){}")).toBe(true);
+        });
 
-    //     it("returns false when the parens are not paired", () => {
-    //         expect(isPaired("(]")).toBe(false);
-    //         expect(isPaired("This is ]some[ }text{")).toBe(false);
-    //         expect(isPaired("(")).toBe(false);
-    //         expect(isPaired(")(")).toBe(false);
-    //         expect(isPaired("())")).toBe(false);
-    //     });
-    // });
+        it("returns false when the parens are not paired", () => {
+            expect(isPaired("(]")).toBe(false);
+            expect(isPaired("This is ]some[ }text{")).toBe(false);
+            expect(isPaired("(")).toBe(false);
+            expect(isPaired(")(")).toBe(false);
+            expect(isPaired("())")).toBe(false);
+        });
+    });
 
     // describe("treeToSentence", () => {
     //     it("Represents a tree as a sentence", () => {

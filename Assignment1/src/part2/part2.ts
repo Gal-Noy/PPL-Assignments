@@ -22,7 +22,22 @@ export const countLetters: Function = (str : string) : LetterCount => {
 }
 
 /* Question 2 */
-export const isPaired: undefined = undefined
+export const isPaired: Function = (str : string) : boolean => {
+    const strArray = stringToArray(str);
+    
+    const checkLetter = (c : string, open : string, close: string) : number => c === open ? 1 : c === close ? -1 : 0;
+    const accByType = (open: string, close: string) => (acc : [boolean, number], curr : string) : [boolean, number] => {
+        const counter = acc[1] + checkLetter(curr, open, close);
+        return [counter < 0 ? false : true && acc[0] ,counter];
+    }
+
+    const checkBrackets = (strs : string[], open: string, close: string) : boolean =>  {
+        const outcome = R.reduce(accByType(open, close), [true, 0], strs);
+        return outcome[0] && outcome[1] === 0;
+    }
+
+    return checkBrackets(strArray, '(', ')') && checkBrackets(strArray, '[', ']') && checkBrackets(strArray, '{', '}');
+}
 
 /* Question 3 */
 export type WordTree = {
