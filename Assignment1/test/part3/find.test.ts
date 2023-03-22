@@ -36,21 +36,23 @@ describe("Find", () => {
   });
 
   describe("returnSquaredIfFoundEven", () => {
-    // it("returns an Ok of the first even number squared in v2", () => {
-    //     expect(F.returnSquaredIfFoundEven_v2([1, 2, 3])).toEqual(R.makeOk(4));
-    // });
-    // it("returns an Ok of the first even number squared in v2", () => {
-    //     expect(F.returnSquaredIfFoundEven_v2([1, 4, 3])).toEqual(R.makeOk(16));
-    // });
-    // it("returns an Ok of the first even number squared in v2", () => {
-    //     expect(F.returnSquaredIfFoundEven_v2([32, 64, 128])).toEqual(R.makeOk(1024));
-    // });
-    // it("return a Failure if no even numbers are in the array in v2", () => {
-    //     expect(F.returnSquaredIfFoundEven_v2([1, 3, 5])).toSatisfy(R.isFailure);
-    // });
-    // it("return a Failure if no even numbers are in the array in v2", () => {
-    //     expect(F.returnSquaredIfFoundEven_v2([])).toSatisfy(R.isFailure);
-    // });
+    it("returns an Ok of the first even number squared in v2", () => {
+      expect(F.returnSquaredIfFoundEven_v2([1, 2, 3])).toEqual(R.makeOk(4));
+    });
+    it("returns an Ok of the first even number squared in v2", () => {
+      expect(F.returnSquaredIfFoundEven_v2([1, 4, 3])).toEqual(R.makeOk(16));
+    });
+    it("returns an Ok of the first even number squared in v2", () => {
+      expect(F.returnSquaredIfFoundEven_v2([32, 64, 128])).toEqual(
+        R.makeOk(1024)
+      );
+    });
+    it("return a Failure if no even numbers are in the array in v2", () => {
+      expect(F.returnSquaredIfFoundEven_v2([1, 3, 5])).toSatisfy(R.isFailure);
+    });
+    it("return a Failure if no even numbers are in the array in v2", () => {
+      expect(F.returnSquaredIfFoundEven_v2([])).toSatisfy(R.isFailure);
+    });
     // it("returns the first even number squared in v3", () => {
     //     expect(F.returnSquaredIfFoundEven_v3([1, 2, 3])).toBe(4);
     // });

@@ -1,4 +1,4 @@
-import { Result, makeFailure, makeOk, bind, either } from "../lib/result";
+import { Result, makeFailure, makeOk, bind, either, isOk } from "../lib/result";
 import * as R from "ramda";
 import { Dictionary } from "ramda";
 
@@ -38,6 +38,14 @@ const returnSquaredIfFoundEven_v1 = (a: number[]): number => {
   }
 };
 
-export const returnSquaredIfFoundEven_v2: undefined = undefined;
+export const returnSquaredIfFoundEven_v2: Function = (
+  a: number[]
+): Result<number> => {
+  const res: Result<number> = findResult((x: number) => x % 2 === 0, a);
+  return bind(
+    res,
+    (value: number): Result<number> => (isOk(res) ? makeOk(value * value) : res)
+  );
+};
 
 export const returnSquaredIfFoundEven_v3: undefined = undefined;
