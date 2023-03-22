@@ -64,11 +64,7 @@ export const treeToSentence: Function = (t: WordTree): string => {
   };
 
   const joinWords = (strs: string[]): string =>
-    strs.reduce(
-      (acc: string, curr: string, i: number): string =>
-        i === 0 ? curr : i === strs.length ? acc : acc + " " + curr,
-      ""
-    );
+    R.reduce((acc: string, curr: string): string => acc + " " + curr, "", strs);
 
-  return joinWords(R.flatten(treeToArray(t)));
+  return R.trim(joinWords(R.flatten(treeToArray(t))));
 };
