@@ -63,3 +63,10 @@ export const returnSquaredIfFoundEven_v3: Function = (a: number[]): number => {
     (): number => (isFailure(res) ? -1 : res.value * res.value)
   );
 };
+
+<T>(x: T[], y: (z: T) => boolean): boolean => x.some(y); // (a)
+(x: number[]): number => x.reduce((acc, cur) => acc + cur, 0); // (b)
+<T>(x: boolean, y: T[]): T => (x ? y[0] : y[1]); // (c)
+<T, U>(f: (a: T) => U, g: (b: number) => T) =>
+  (x: number): U =>
+    f(g(x + 1)); // (d)
