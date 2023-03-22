@@ -1,6 +1,13 @@
-import { Result, makeFailure, makeOk, bind, either, isOk } from "../lib/result";
+import {
+  Result,
+  makeFailure,
+  makeOk,
+  bind,
+  either,
+  isOk,
+  isFailure,
+} from "../lib/result";
 import * as R from "ramda";
-import { Dictionary } from "ramda";
 
 /* Library code */
 const findOrThrow = <T>(pred: (x: T) => boolean, a: T[]): T => {
@@ -48,4 +55,11 @@ export const returnSquaredIfFoundEven_v2: Function = (
   );
 };
 
-export const returnSquaredIfFoundEven_v3: undefined = undefined;
+export const returnSquaredIfFoundEven_v3: Function = (a: number[]): number => {
+  const res: Result<number> = findResult((x: number) => x % 2 === 0, a);
+  return either(
+    res,
+    (): number => (isOk(res) ? res.value * res.value : -1),
+    (): number => (isFailure(res) ? -1 : res.value * res.value)
+  );
+};
