@@ -17,7 +17,9 @@ const findOrThrow = <T>(pred: (x: T) => boolean, a: T[]): T => {
   throw "No element found.";
 };
 
-export const findResult: Function = <T>(
+export const findResult: <T>(pred: (x: T) => boolean, a: T[]) => Result<T> = <
+  T
+>(
   pred: (x: T) => boolean,
   a: T[]
 ): Result<T> => {
@@ -45,7 +47,7 @@ const returnSquaredIfFoundEven_v1 = (a: number[]): number => {
   }
 };
 
-export const returnSquaredIfFoundEven_v2: Function = (
+export const returnSquaredIfFoundEven_v2: (a: number[]) => Result<number> = (
   a: number[]
 ): Result<number> => {
   const res: Result<number> = findResult((x: number) => x % 2 === 0, a);
@@ -55,7 +57,9 @@ export const returnSquaredIfFoundEven_v2: Function = (
   );
 };
 
-export const returnSquaredIfFoundEven_v3: Function = (a: number[]): number => {
+export const returnSquaredIfFoundEven_v3: (a: number[]) => number = (
+  a: number[]
+): number => {
   const res: Result<number> = findResult((x: number) => x % 2 === 0, a);
   return either(
     res,
@@ -63,10 +67,3 @@ export const returnSquaredIfFoundEven_v3: Function = (a: number[]): number => {
     (): number => (isFailure(res) ? -1 : res.value * res.value)
   );
 };
-
-<T>(x: T[], y: (z: T) => boolean): boolean => x.some(y); // (a)
-(x: number[]): number => x.reduce((acc, cur) => acc + cur, 0); // (b)
-<T>(x: boolean, y: T[]): T => (x ? y[0] : y[1]); // (c)
-<T, U>(f: (a: T) => U, g: (b: number) => T) =>
-  (x: number): U =>
-    f(g(x + 1)); // (d)

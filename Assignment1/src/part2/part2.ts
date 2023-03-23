@@ -6,25 +6,20 @@ const stringToArray = R.split("");
 type LetterCount = Dictionary<number>;
 
 /* Question 1 */
-export const countLetters: Function = (str: string): LetterCount => {
-  const addOrInc = (freqs: LetterCount, c: string): LetterCount => {
-    const newFreqs = { ...freqs };
-    const currentCount = newFreqs[c] || 0;
-    newFreqs[c] = currentCount + 1;
-    return newFreqs;
-  };
+export const countLetters: (str: string) => LetterCount = (
+  str: string
+): LetterCount => {
   const isLetter = (str: string): boolean =>
     str.length === 1 && /[a-z]/i.test(str);
   const filterLetters = (strs: string[]): string[] => R.filter(isLetter, strs);
   const mapToLowercase = (strs: string[]): string[] =>
     R.map((x: string): string => x.toLowerCase(), strs);
   const mapAndFilter = R.pipe(filterLetters, mapToLowercase);
-
-  return R.reduce(addOrInc, {}, mapAndFilter(stringToArray(str)));
+  return R.countBy(R.toLower, mapAndFilter(stringToArray(str)));
 };
 
 /* Question 2 */
-export const isPaired: Function = (str: string): boolean => {
+export const isPaired: (str: string) => boolean = (str: string): boolean => {
   const strArray = stringToArray(str);
 
   const checkLetter = (c: string, open: string, close: string): number =>
@@ -58,7 +53,9 @@ export type WordTree = {
   children: WordTree[];
 };
 
-export const treeToSentence: Function = (t: WordTree): string => {
+export const treeToSentence: (t: WordTree) => string = (
+  t: WordTree
+): string => {
   const treeToArray = (t: WordTree): Array<any> => {
     return [t.root, R.map(treeToArray, t.children)];
   };
