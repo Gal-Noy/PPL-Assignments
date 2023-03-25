@@ -20,10 +20,12 @@ export const countLetters: (str: string) => LetterCount = (
 
 /* Question 2 */
 export const isPaired: (str: string) => boolean = (str: string): boolean => {
-  const handleStack = (stack: string[], open: string, close: string): string[] => {
-    return R.isEmpty(stack)
-      ? [close]
-      : R.last(stack) === open
+  const handleStack = (
+    stack: string[],
+    open: string,
+    close: string
+  ): string[] => {
+    return R.last(stack) === open
       ? R.dropLast(1, stack)
       : R.concat(stack, [close]);
   };
@@ -38,8 +40,7 @@ export const isPaired: (str: string) => boolean = (str: string): boolean => {
       ? R.concat(acc, [curr])
       : acc;
   };
-
-  return R.reduce(reducer, [], stringToArray(str)).length === 0;
+  return R.isEmpty(R.reduce(reducer, [], stringToArray(str)));
 };
 
 /* Question 3 */
