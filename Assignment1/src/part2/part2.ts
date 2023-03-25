@@ -20,31 +20,26 @@ export const countLetters: (str: string) => LetterCount = (
 
 /* Question 2 */
 export const isPaired: (str: string) => boolean = (str: string): boolean => {
-  const strArray = stringToArray(str);
-
-  const checkLetter = (c: string, open: string, close: string): number =>
-    c === open ? 1 : c === close ? -1 : 0;
-  const accByType =
-    (open: string, close: string) =>
-    (acc: [boolean, number], curr: string): [boolean, number] => {
-      const counter = acc[1] + checkLetter(curr, open, close);
-      return [counter < 0 ? false : true && acc[0], counter];
-    };
-
-  const checkBrackets = (
-    strs: string[],
-    open: string,
-    close: string
-  ): boolean => {
-    const outcome = R.reduce(accByType(open, close), [true, 0], strs);
-    return outcome[0] && outcome[1] === 0;
+  const handleStack = (stack: string[], open: string, close: string): string[] => {
+    return R.isEmpty(stack)
+      ? [close]
+      : R.last(stack) === open
+      ? R.dropLast(1, stack)
+      : R.concat(stack, [close]);
+  };
+  const reducer = (acc: string[], curr: string): string[] => {
+    return curr === ")"
+      ? handleStack(acc, "(", curr)
+      : curr === "]"
+      ? handleStack(acc, "[", curr)
+      : curr === "}"
+      ? handleStack(acc, "{", curr)
+      : curr === "(" || curr === "[" || curr === "{"
+      ? R.concat(acc, [curr])
+      : acc;
   };
 
-  return (
-    checkBrackets(strArray, "(", ")") &&
-    checkBrackets(strArray, "[", "]") &&
-    checkBrackets(strArray, "{", "}")
-  );
+  return R.reduce(reducer, [], stringToArray(str)).length === 0;
 };
 
 /* Question 3 */
