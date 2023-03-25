@@ -9,11 +9,10 @@ type LetterCount = Dictionary<number>;
 export const countLetters: (str: string) => LetterCount = (
   str: string
 ): LetterCount => {
-  const isLetter = (str: string): boolean =>
-    str.length === 1 && /[a-z]/i.test(str);
-  const filterLetters = (strs: string[]): string[] => R.filter(isLetter, strs);
+  const filterLetters = (strs: string[]): string[] =>
+    R.filter((c) => /[a-z]/i.test(c), strs);
   const mapToLowercase = (strs: string[]): string[] =>
-    R.map((x: string): string => x.toLowerCase(), strs);
+    R.map((c) => R.toLower(c), strs);
   const mapAndFilter = R.pipe(filterLetters, mapToLowercase);
   return R.countBy(R.toLower, mapAndFilter(stringToArray(str)));
 };
@@ -57,7 +56,10 @@ export const treeToSentence: (t: WordTree) => string = (
   };
 
   const joinWords = (strs: string[]): string =>
-    R.reduce((acc: string, curr: string): string => acc + " " + curr, "", strs);
-
+    R.reduce(
+      (acc: string, curr: string): string => R.concat(R.concat(acc, " "), curr),
+      "",
+      strs
+    );
   return R.trim(joinWords(R.flatten(treeToArray(t))));
 };
