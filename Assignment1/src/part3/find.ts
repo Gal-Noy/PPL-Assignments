@@ -12,12 +12,13 @@ const findOrThrow = <T>(pred: (x: T) => boolean, a: T[]): T => {
 export const findResult: <T>(pred: (x: T) => boolean, a: T[]) => Result<T> = <T>(
   pred: (x: T) => boolean,
   a: T[]
-): Result<T> => {
-  const reducer = (acc: [Result<T>, boolean], curr: T): [Result<T>, boolean] =>
-    acc[1] ? acc : pred(curr) ? [makeOk(curr), true] : [makeFailure("No element found."), false];
-  const finalTuple: [Result<T>, boolean] = R.reduce(reducer, [makeFailure("No element found."), false], a);
-  return finalTuple[0];
-};
+): Result<T> =>
+  R.reduce(
+    (acc: [Result<T>, boolean], curr: T): [Result<T>, boolean] =>
+      acc[1] ? acc : pred(curr) ? [makeOk(curr), true] : [makeFailure<T>("No element found."), false],
+    [makeFailure<T>("No element found."), false],
+    a
+  )[0];
 
 /* Client code */
 const returnSquaredIfFoundEven_v1 = (a: number[]): number => {

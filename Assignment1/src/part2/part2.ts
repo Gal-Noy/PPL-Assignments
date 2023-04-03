@@ -5,12 +5,13 @@ const stringToArray = R.split("");
 
 type LetterCount = Dictionary<number>;
 
-const filterLetters = (strs: string[]): string[] => R.filter((c) => /[a-z]/i.test(c), strs);
-const mapToLowercase = (strs: string[]): string[] => R.map((c) => R.toLower(c), strs);
-const mapAndFilter = R.pipe(filterLetters, mapToLowercase);
 /* Question 1 */
 export const countLetters: (str: string) => LetterCount = (str: string): LetterCount =>
-  R.countBy(R.toLower, mapAndFilter(stringToArray(str)));
+  R.pipe(
+    R.filter((c) => /[a-z]/i.test(c)),
+    R.map(R.toLower),
+    R.countBy(R.identity)
+  )(stringToArray(str));
 
 const handleStack = (stack: string[], open: string, close: string): string[] =>
   R.last(stack) === open ? R.dropLast(1, stack) : R.concat(stack, [close]);
@@ -35,8 +36,5 @@ export type WordTree = {
 };
 
 const treeToArray = (t: WordTree): Array<any> => [t.root, R.map(treeToArray, t.children)];
-const joinWords = (strs: string[]): string =>
-  R.reduce((acc: string, curr: string): string => R.concat(R.concat(acc, " "), curr), "", strs);
-
 export const treeToSentence: (t: WordTree) => string = (t: WordTree): string =>
-  R.trim(joinWords(R.flatten(treeToArray(t))));
+  R.trim(R.reduce((acc: string, curr: string): string => acc + " " + curr, "", R.flatten(treeToArray(t))));
