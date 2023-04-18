@@ -1,0 +1,101 @@
+(define take
+  (lambda (lst pos)
+    @TODO
+  )
+ )
+
+(define take-map
+  (lambda (lst func pos)
+    @TODO
+  )
+ )
+
+(define take-filter
+  (lambda (lst pred pos)
+    @TODO
+  )
+ )
+
+(define sub-size
+  (lambda (lst size)
+    @TODO
+  )
+ )
+
+(define sub-size-map
+  (lambda (lst func size)
+    @TODO
+  )
+ )
+
+(define root
+  (lambda (tree)
+    @TODO
+  )
+ )
+
+(define left
+  (lambda (tree)
+    @TODO
+  )
+ )
+
+(define right
+  (lambda (tree)
+    @TODO
+  )
+ )
+
+(define count-node
+  (lambda (tree val)
+    @TODO
+  )
+ )
+
+(define mirror-tree
+  (lambda (tree)
+    @TODO
+  )
+ )
+
+(define make-ok
+  (lambda (val)
+    @TODO
+  )
+ )
+ 
+(define make-error
+  (lambda (msg)
+    @TODO
+  )
+ )
+
+(define ok?
+  (lambda (res)
+    @TODO
+  )
+ )
+
+(define error?
+  (lambda (res)
+    @TODO
+  )
+ )
+
+(define result?
+  (lambda (res)
+    @TODO
+  )
+ )
+
+(define result->val
+  (lambda (res)
+    @TODO
+  )
+)
+
+(define bind 
+  (lambda (f)
+    @TODO
+  )
+)
