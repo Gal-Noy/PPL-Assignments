@@ -1,54 +1,84 @@
 (define take
   (lambda (lst pos)
-    @TODO
+    (if (= pos 0)
+      '()
+      (if (empty? lst)
+        '()
+        (cons (car lst) (take (cdr lst) (- pos 1)))
+        )
+      )
+    )
   )
- )
 
 (define take-map
   (lambda (lst func pos)
-    @TODO
+    (if (= pos 0)
+      '()
+      (if (empty? lst)
+        '()
+        (cons (func (car lst)) (take-map (cdr lst) func (- pos 1))))))
   )
- )
 
 (define take-filter
   (lambda (lst pred pos)
-    @TODO
-  )
- )
+    (if (= pos 0)
+      '()
+      (if (empty? lst)
+        '()
+        (if (pred (car lst))
+          (cons (car lst) (take-filter (cdr lst) pred (- pos 1)))
+          (take-filter (cdr lst) pred pos))))))
 
 (define sub-size
   (lambda (lst size)
-    @TODO
+    (if (= (length lst) size)
+      (list lst)
+      (if (< (length lst) size)
+        '()
+        (cons (take lst size) (sub-size (cdr lst) size))
+      )
+    )
   )
- )
+)
 
 (define sub-size-map
   (lambda (lst func size)
-    @TODO
+    (if (= size 0)
+      '(())
+      (if (empty? lst)
+        lst
+        (if (< (length lst) size)
+          '()
+          (cons (take-map lst func size) (sub-size-map (cdr lst) func size))
+        )
+      )
+    )
   )
- )
+)
 
 (define root
   (lambda (tree)
-    @TODO
+    (car tree)
   )
  )
 
 (define left
   (lambda (tree)
-    @TODO
+    (car (cdr tree))
   )
  )
 
 (define right
   (lambda (tree)
-    @TODO
+    (car (cdr (cdr tree)))
   )
  )
 
 (define count-node
   (lambda (tree val)
-    @TODO
+    (if (pair? tree)
+      (+ (if (= (root tree) val) 1 0) (+ (count-node (right tree) val) (count-node (left tree) val)))
+      (if (= tree val) 1 0))
   )
  )
 
