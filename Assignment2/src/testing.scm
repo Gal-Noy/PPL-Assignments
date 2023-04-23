@@ -48,6 +48,15 @@
   )
  )
 
+ (define mirror-tree
+  (lambda (tree)
+    (if (pair? tree)
+      '((root tree) (mirror-tree (right tree)) (mirror-tree (left tree)))
+      tree
+    )
+  )
+ )
+
 #lang racket
 
 (display (= (length '') 0))

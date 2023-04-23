@@ -135,11 +135,10 @@ describe('Q2 Tests', () => {
      */
     it("Q22b", () => {
         expect(evalP(`(L3` + q2 + `3)`)).to.deep.equal(makeOk(3));
-        // expect(evalP(`(L3` + q2 + q2_test_string + `(define t '(1 1 1)) (count-node t #t)` + `)`)).to.deep.equal(makeOk(3));
         expect(evalP(`(L3` + q2 + q2_test_string + `(define t '(1 (#t 3 #t) 2)) (count-node t #t)` + `)`)).to.deep.equal(makeOk(2));
-        // expect(evalP(`(L3` + q2 + q2_test_string + `(define t '(1 (#t 3 #t) 2)) (count-node t 4)` + `)`)).to.deep.equal(makeOk(0));
-        // expect(evalP(`(L3` + q2 + q2_test_string + `(define t '(1 (#t 3 4) 2)) (list=? (mirror-tree t) '(1 2 (#t 4 3)))` + `)`)).to.deep.equal(makeOk(true));
-        // expect(evalP(`(L3` + q2 + q2_test_string + `(define t '(5 (#t 4 2) (12 () 3))) (list=? (mirror-tree t) '(5 (12 3 ()) (#t 2 4)))` + `)`)).to.deep.equal(makeOk(true));
+        expect(evalP(`(L3` + q2 + q2_test_string + `(define t '(1 (#t 3 #t) 2)) (count-node t 4)` + `)`)).to.deep.equal(makeOk(0));
+        expect(evalP(`(L3` + q2 + q2_test_string + `(define t '(1 (#t 3 4) 2)) (list=? (mirror-tree t) '(1 2 (#t 4 3)))` + `)`)).to.deep.equal(makeOk(true));
+        expect(evalP(`(L3` + q2 + q2_test_string + `(define t '(5 (#t 4 2) (12 () 3))) (list=? (mirror-tree t) '(5 (12 3 ()) (#t 2 4)))` + `)`)).to.deep.equal(makeOk(true));
     });
 
 

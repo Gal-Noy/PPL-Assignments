@@ -78,54 +78,78 @@
   (lambda (tree val)
     (if (pair? tree)
       (+ (if (= (root tree) val) 1 0) (+ (count-node (right tree) val) (count-node (left tree) val)))
-      (if (= tree val) 1 0))
+      (if (= tree val) 1 0)
+    )
   )
  )
 
 (define mirror-tree
   (lambda (tree)
-    @TODO
+    (if (pair? tree)
+      (list (root tree) (mirror-tree (right tree)) (mirror-tree (left tree)))
+      tree
+    )
   )
  )
 
 (define make-ok
   (lambda (val)
-    @TODO
+    (cons 'ok val)
   )
  )
  
 (define make-error
   (lambda (msg)
-    @TODO
+    (cons 'error msg)
   )
  )
 
 (define ok?
   (lambda (res)
-    @TODO
+    (if (pair? res)
+      (eq? (car res) 'ok)
+      #f
+    ) 
   )
  )
 
 (define error?
   (lambda (res)
-    @TODO
+    (if (pair? res)
+      (eq? (car res) 'error)
+      #f
+    ) 
   )
  )
 
 (define result?
   (lambda (res)
-    @TODO
+    (if (pair? res)
+      (or (ok? res) (error? res))
+      #f
+    )
   )
  )
 
 (define result->val
   (lambda (res)
-    @TODO
+    (if (result? res)
+      (cdr res)
+      (make-error "Error: not a result")
+    )
   )
 )
 
 (define bind 
   (lambda (f)
-    @TODO
+    (lambda (res)
+      (if (result? res)
+        (if (ok? res)
+          (f (result->val res))
+          (make-error (result->val res))
+        )
+        (result->val res)
+      )
+    )
   )
 )
