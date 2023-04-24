@@ -4,7 +4,7 @@ import { map, pipe, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString } from '../imp/L3-value'
 import { first, second, rest, allT, isEmpty } from "../shared/list";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
-import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
+import { isOk, isFailure, Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
 import { parse as p, isSexpString, isToken } from "../shared/parser";
 import { Sexp, Token } from "s-expression";
 
@@ -31,9 +31,12 @@ import { Sexp, Token } from "s-expression";
 ;;         |  ( lambda ( <var>* ) <cexp>+ ) / ProcExp(args:VarDecl[], body:CExp[]))
 ;;         |  ( if <cexp> <cexp> <cexp> )   / IfExp(test: CExp, then: CExp, alt: CExp)
 ;;         |  ( let ( binding* ) <cexp>+ )  / LetExp(bindings:Binding[], body:CExp[]))
+;;         |  ( cond ( <cond-clauses>+ <else-clause> ) / CondExp(condClauses: CondClause [], elseClause: ElseClause)
 ;;         |  ( quote <sexp> )              / LitExp(val:SExp)
 ;;         |  ( <cexp> <cexp>* )            / AppExp(operator:CExp, operands:CExp[]))
 ;; <binding>  ::= ( <var> <cexp> )           / Binding(var:VarDecl, val:Cexp)
+;; <cond-clause> ::= ( <cexp> <cexp>+ ) / CondClause (test: CExp, body: CExp[])
+;; <else-clause> ::= ( else <cexp>+ ) / ElseClause(body: CExp[])
 ;; <prim-op>  ::= + | - | * | / | < | > | = | not |  and | or | eq? | string=?
 ;;                  | cons | car | cdr | pair? | number? | list 
 ;;                  | boolean? | symbol? | string?      ##### L31
@@ -47,7 +50,7 @@ import { Sexp, Token } from "s-expression";
 
 export type Exp = DefineExp | CExp;
 export type AtomicExp = NumExp | BoolExp | StrExp | PrimOp | VarRef;
-export type CompoundExp = AppExp | IfExp | ProcExp | LetExp | LitExp;
+export type CompoundExp = AppExp | IfExp | ProcExp | LetExp | LitExp | CondExp;
 export type CExp =  AtomicExp | CompoundExp;
 
 export type Program = {tag: "Program"; exps: Exp[]; }
@@ -66,6 +69,10 @@ export type Binding = {tag: "Binding"; var: VarDecl; val: CExp; }
 export type LetExp = {tag: "LetExp"; bindings: Binding[]; body: CExp[]; }
 // L31
 export type LitExp = {tag: "LitExp"; val: SExpValue; }
+
+export type CondClause = { tag: "CondClause", test: CExp, body: CExp[]; }
+export type ElseClause = { tag: "ElseClause", body: CExp[]; }
+export type CondExp = { tag: "CondExp", condClauses: CondClause[]; elseClause: ElseClause}
 
 // Type value constructors for disjoint types
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});
@@ -92,6 +99,13 @@ export const makeLetExp = (bindings: Binding[], body: CExp[]): LetExp =>
 export const makeLitExp = (val: SExpValue): LitExp =>
     ({tag: "LitExp", val: val});
 
+export const makeCondClause = (test: CExp, body: CExp[]) : CondClause =>
+    ({ tag: "CondClause", test: test, body: body });
+export const makeElseClause = (body: CExp[]) : ElseClause =>
+    ({ tag: "ElseClause", body: body });
+export const makeCondExp = (condClauses: CondClause[], elseClause: ElseClause) : CondExp =>
+    ({ tag: "CondExp", condClauses: condClauses, elseClause: elseClause });
+
 // Type predicates for disjoint types
 export const isProgram = (x: any): x is Program => x.tag === "Program";
 export const isDefineExp = (x: any): x is DefineExp => x.tag === "DefineExp";
@@ -117,10 +131,14 @@ export const isAtomicExp = (x: any): x is AtomicExp =>
     isNumExp(x) || isBoolExp(x) || isStrExp(x) ||
     isPrimOp(x) || isVarRef(x);
 export const isCompoundExp = (x: any): x is CompoundExp =>
-    isAppExp(x) || isIfExp(x) || isProcExp(x) || isLitExp(x) || isLetExp(x);
+    isAppExp(x) || isIfExp(x) || isProcExp(x) || isLitExp(x) || isLetExp(x) || isCondExp(x);
 export const isCExp = (x: any): x is CExp =>
     isAtomicExp(x) || isCompoundExp(x);
 
+export const isCondClause = (x:any): x is CondClause => x.tag === "CondClause";
+export const isElseClause = (x:any): x is ElseClause => x.tag === "ElseClause";
+export const isCondExp = (x:any): x is CondExp => x.tag === "CondExp";
+    
 // ========================================================
 // Parsing
 
@@ -161,6 +179,7 @@ export const parseL31SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
     op === "lambda" ? parseProcExp(first(params), rest(params)) :
     op === "let" ? parseLetExp(first(params), rest(params)) :
     op === "quote" ? parseLitExp(first(params)) :
+    op === "cond" ? parseCondExp(params) :
     makeFailure("Never");
 
 // DefineExp -> (define <varDecl> <CExp>)
@@ -201,7 +220,7 @@ const isPrimitiveOp = (x: string): boolean =>
      "number?", "boolean?", "symbol?", "string?"].includes(x);
 
 const isSpecialForm = (x: string): boolean =>
-    ["if", "lambda", "let", "quote"].includes(x);
+    ["if", "lambda", "let", "quote", "cond"].includes(x);
 
 const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
     bind(parseL31CExp(op), (rator: CExp) => 
@@ -242,6 +261,31 @@ const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
 export const parseLitExp = (param: Sexp): Result<LitExp> =>
     mapv(parseSExp(param), (sexp: SExpValue) => 
          makeLitExp(sexp));
+
+export const parseCondExp = (params: Sexp[]) : Result<CondExp> =>
+    {
+        if (params.length < 2)
+            return makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`);
+        const condClausesSExps = params.slice(0, -1); // Sexp[]
+        const elseClauseSExp = params[params.length-1]; // Sexp
+        const condClauses = mapResult(parseCondClause, condClausesSExps); // Result<CondClause[]>
+        const elseClause = parseElseClause(elseClauseSExp); // Result<ElseClause>
+        
+        if (isFailure(condClauses) || isFailure(elseClause))
+            return makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`);
+        
+        return makeOk(makeCondExp(condClauses.value, elseClause.value));
+    }
+
+export const parseCondClause = (params: Sexp) : Result<CondClause> =>
+        !isArray(params) || params.length < 2 ? makeFailure(`Expression not of the form (<cexp> <cexp>+): ${JSON.stringify(params, null, 2)}`) :
+        mapv(mapResult(parseL31CExp, params), (cexps: CExp[]) => 
+        makeCondClause(cexps[0], rest(cexps)));
+    
+export const parseElseClause = (params: Sexp) : Result<ElseClause> =>
+        !isArray(params) || params.length < 2 || params[0] !== "else" ? makeFailure(`Expression not of the form (else <cexp>+): ${JSON.stringify(params, null, 2)}`) :
+        mapv(mapResult(parseL31CExp, params), (cexps: CExp[]) => 
+        makeElseClause(cexps));
 
 export const isDottedPair = (sexps: Sexp[]): boolean =>
     sexps.length === 3 && 
@@ -293,6 +337,9 @@ const unparseProcExp = (pe: ProcExp): string =>
 const unparseLetExp = (le: LetExp) : string => 
     `(let (${map((b: Binding) => `(${b.var.var} ${unparseL31(b.val)})`, le.bindings).join(" ")}) ${unparseLExps(le.body)})`
 
+const unparseCondExp = (c: CondExp) : string =>
+    `(cond ${map((clause: CondClause) => `(${unparseL31(clause.test)} ${map(unparseL31, clause.body).join(" ")})`, c.condClauses).join(" ")} (${map(unparseL31, c.elseClause.body).join(" ")}))`
+
 export const unparseL31 = (exp: Program | Exp): string =>
     isBoolExp(exp) ? valueToString(exp.val) :
     isNumExp(exp) ? valueToString(exp.val) :
@@ -306,4 +353,5 @@ export const unparseL31 = (exp: Program | Exp): string =>
     isLetExp(exp) ? unparseLetExp(exp) :
     isDefineExp(exp) ? `(define ${exp.var.var} ${unparseL31(exp.val)})` :
     isProgram(exp) ? `(L31 ${unparseLExps(exp.exps)})` :
+    isCondExp(exp) ? unparseCondExp(exp) :
     exp;
