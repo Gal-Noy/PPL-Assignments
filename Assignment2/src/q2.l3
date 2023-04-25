@@ -77,11 +77,14 @@
 (define count-node
   (lambda (tree val)
     (if (pair? tree)
-      (+ (if (= (root tree) val) 1 0) (+ (count-node (right tree) val) (count-node (left tree) val)))
-      (if (= tree val) 1 0)
+        (+ (if (= (root tree) val) 1 0)
+            (+ (count-node (right tree) val)
+                (count-node (left tree) val))
+        )
+        (if (= tree val) 1 0)
+      )
     )
   )
- )
 
 (define mirror-tree
   (lambda (tree)
@@ -143,12 +146,9 @@
 (define bind 
   (lambda (f)
     (lambda (res)
-      (if (result? res)
-        (if (ok? res)
+      (if (ok? res)
           (f (result->val res))
           (make-error (result->val res))
-        )
-        (result->val res)
       )
     )
   )

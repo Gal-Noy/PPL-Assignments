@@ -269,7 +269,7 @@ export const parseCondExp = (params: Sexp[]) : Result<CondExp> =>
                 makeOk(makeCondExp(condClauses, elseClause))));
     
 export const parseCondClause = (params: Sexp) : Result<CondClause> =>
-        !isArray(params) || params.length < 2 ? makeFailure(`Expression not of the form (cond <cexp> <cexp>+): ${JSON.stringify(params, null, 2)}`) :
+        !isArray(params) || params.length < 2 ? makeFailure(`Expression not of the form (<cexp> <cexp>+): ${JSON.stringify(params, null, 2)}`) :
         mapv(mapResult(parseL31CExp, params), (cexps: CExp[]) => 
         makeCondClause(cexps[0], rest(cexps)));
     
