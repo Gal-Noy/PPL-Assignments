@@ -4,7 +4,7 @@ import { map, pipe, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString } from '../imp/L3-value'
 import { first, second, rest, allT, isEmpty } from "../shared/list";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
-import { isOk, isFailure, Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
+import { isOk, isFailure, Result, makeOk, makeFailure, bind, mapResult, mapv, safe2 } from "../shared/result";
 import { parse as p, isSexpString, isToken } from "../shared/parser";
 import { Sexp, Token } from "s-expression";
 
@@ -262,19 +262,25 @@ export const parseLitExp = (param: Sexp): Result<LitExp> =>
     mapv(parseSExp(param), (sexp: SExpValue) => 
          makeLitExp(sexp));
 
-export const parseCondExp = (params: Sexp[]) : Result<CondExp> =>
+// export const safe2 = <CondClause[], ElseClause, CondExp>(makeCondExp: (x: CondClause[], y: ElseClause) => Result<CondExp>): (xr: Result<CondClause[]>, yr: Result<ElseClause>) => Result<CondExp> =>
+//     (xr: Result<CondClause[]>, yr: Result<ElseClause>) =>
+//         bind(xr, (x: CondClause[]) => bind(yr, (y: ElseClause) => makeCondExp(x, y)));
+
+
+export const parseCondExp = (params: Sexp[]) : Result<CondExp> => 
     {
         if (params.length < 2)
             return makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`);
-        const condClausesSExps = params.slice(0, -1); // Sexp[]
-        const elseClauseSExp = params[params.length-1]; // Sexp
-        const condClauses = mapResult(parseCondClause, condClausesSExps); // Result<CondClause[]>
-        const elseClause = parseElseClause(elseClauseSExp); // Result<ElseClause>
+
+        const condClauses = mapResult(parseCondClause, params.slice(0, -1)); // Result<CondClause[]>
+        const elseClause = parseElseClause(params[params.length-1]); // Result<ElseClause>
         
-        if (isFailure(condClauses) || isFailure(elseClause))
-            return makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`);
+        return bind(condClauses, (condClauses: CondClause[]) => bind(elseClause, (elseClause: ElseClause) => makeOk(makeCondExp(condClauses, elseClause))));
         
-        return makeOk(makeCondExp(condClauses.value, elseClause.value));
+        // if (isFailure(condClauses) || isFailure(elseClause))
+        //     return makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`);
+        
+        // return makeOk(makeCondExp(condClauses.value, elseClause.value));
     }
 
 export const parseCondClause = (params: Sexp) : Result<CondClause> =>
