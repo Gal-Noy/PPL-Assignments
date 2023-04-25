@@ -9,46 +9,87 @@ import {
   isCondExp,
   isProgram,
   isExp,
-  makeBoolExp,
   makeLetExp,
   makeBinding,
-  makeLitExp,
-  makeCondClause,
   isCExp,
+  isAtomicExp,
+  isDefineExp,
+  makeDefineExp,
+  isProcExp,
+  makeProcExp,
+  isLetExp,
+  isLitExp,
+  isAppExp,
+  makeAppExp,
+  isIfExp,
+  Binding,
 } from "./L31-ast";
-import { isArray } from "../shared/type-predicates";
-import { Result, makeFailure, makeOk } from "../shared/result";
+import { Result, makeOk } from "../shared/result";
+import { makeProgram } from "./L31-ast";
+import * as R from "ramda";
 
 /*
 Purpose: Transform L31 AST to L3 AST
 Signature: l31ToL3(l31AST)
 Type: [Exp | Program] => Result<Exp | Program>
 */
-export const L31ToL3 = (exp: Exp | Program): Result<Exp | Program> => {
-  if (isExp(exp)) {
-    console.log("L31ToL3: exp is an Exp");
-    if (!isCondExp(exp)) return makeOk(exp);
-    else {
-      const res = rewriteCond(exp);
-      console.log("L31ToL3: res is: ", res);
-      return makeOk(res);
-    }
-    // return isCondExp(exp) ? makeOk(rewriteCond(exp)) : makeOk(exp);
-  } else {
-    if (isArray(exp.exps))
-      return makeOk({ tag: exp.tag, exps: exp.exps.map((e) => (isCondExp(e) ? rewriteCond(e) : e)) });
-    else return makeFailure("L31ToL3: exps is not an array");
-  }
-};
+export const L31ToL3 = (exp: Exp | Program): Result<Exp | Program> =>
+  makeOk(rewriteAllCond(exp));
 
-// const rewriteCond = (exp: CondExp): IfExp => { //add error handling
-//     const condClauses = exp.condClauses;
-//     const elseClause = exp.elseClause;
-//     const thenClause = condClauses[0];
-//     const restClauses = condClauses.slice(1);
-//     return makeIfExp(thenClause.test, thenClause.body[0], rewriteCond(makeCondExp(restClauses.length > 0 ? restClauses : [], elseClause)));
-// }
-// const rewriteCond = (exp: CondExp): IfExp =>
-//     exp.condClauses.length === 0 ? makeIfExp(makeBoolExp(false), makeBoolExp(false), makeBoolExp(false)) :
-//     exp.condClauses.length === 1 ? makeIfExp(exp.condClauses[0].test, exp.condClauses[0].body[0], exp.elseClause.body[1]) :
-//     makeIfExp(exp.condClauses[0].test, exp.condClauses[0].body[0], rewriteCond(makeCondExp(exp.condClauses.slice(1), exp.elseClause)));
+const rewriteAllCond = (exp: Program | Exp): Program | Exp =>
+  isExp(exp)
+    ? rewriteAllCondExp(exp)
+    : isProgram(exp)
+    ? makeProgram(R.map(rewriteAllCondExp, exp.exps))
+    : exp;
+
+const rewriteAllCondExp = (exp: Exp): Exp =>
+  isCExp(exp)
+    ? rewriteAllCondCExp(exp)
+    : isDefineExp(exp)
+    ? makeDefineExp(exp.var, rewriteAllCondCExp(exp.val))
+    : exp;
+
+const rewriteAllCondCExp = (exp: CExp): CExp =>
+  isAtomicExp(exp)
+    ? exp
+    : isLitExp(exp)
+    ? exp
+    : isIfExp(exp)
+    ? makeIfExp(
+        rewriteAllCondCExp(exp.test),
+        rewriteAllCondCExp(exp.then),
+        rewriteAllCondCExp(exp.alt)
+      )
+    : isAppExp(exp)
+    ? makeAppExp(
+        rewriteAllCondCExp(exp.rator),
+        R.map(rewriteAllCondCExp, exp.rands)
+      )
+    : isProcExp(exp)
+    ? makeProcExp(exp.args, R.map(rewriteAllCondCExp, exp.body))
+    : isLetExp(exp)
+    ? makeLetExp(
+        R.map(
+          (x: Binding) => makeBinding(x.var.var, rewriteAllCondCExp(x.val)),
+          exp.bindings
+        ),
+        R.map(rewriteAllCondCExp, exp.body)
+      )
+    : isCondExp(exp)
+    ? rewriteCond(exp)
+    : exp;
+
+const rewriteCond = (exp: CondExp): IfExp => {
+  const [firstClause, ...restClauses] = exp.condClauses;
+
+  return makeIfExp(
+    rewriteAllCondCExp(firstClause.test),
+    rewriteAllCondCExp(firstClause.body[0]),
+    rewriteAllCondCExp(
+      restClauses.length === 0
+        ? exp.elseClause.body[1]
+        : rewriteCond(makeCondExp(restClauses, exp.elseClause))
+    )
+  );
+};

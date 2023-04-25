@@ -262,29 +262,14 @@ export const parseLitExp = (param: Sexp): Result<LitExp> =>
     mapv(parseSExp(param), (sexp: SExpValue) => 
          makeLitExp(sexp));
 
-// export const safe2 = <CondClause[], ElseClause, CondExp>(makeCondExp: (x: CondClause[], y: ElseClause) => Result<CondExp>): (xr: Result<CondClause[]>, yr: Result<ElseClause>) => Result<CondExp> =>
-//     (xr: Result<CondClause[]>, yr: Result<ElseClause>) =>
-//         bind(xr, (x: CondClause[]) => bind(yr, (y: ElseClause) => makeCondExp(x, y)));
-
-
 export const parseCondExp = (params: Sexp[]) : Result<CondExp> => 
-    {
-        if (params.length < 2)
-            return makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`);
-
-        const condClauses = mapResult(parseCondClause, params.slice(0, -1)); // Result<CondClause[]>
-        const elseClause = parseElseClause(params[params.length-1]); // Result<ElseClause>
-        
-        return bind(condClauses, (condClauses: CondClause[]) => bind(elseClause, (elseClause: ElseClause) => makeOk(makeCondExp(condClauses, elseClause))));
-        
-        // if (isFailure(condClauses) || isFailure(elseClause))
-        //     return makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`);
-        
-        // return makeOk(makeCondExp(condClauses.value, elseClause.value));
-    }
-
+    params.length < 2 ? makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`) :
+        bind(mapResult(parseCondClause, params.slice(0, -1)), (condClauses: CondClause[]) =>
+            bind(parseElseClause(params[params.length-1]), (elseClause: ElseClause) =>
+                makeOk(makeCondExp(condClauses, elseClause))));
+    
 export const parseCondClause = (params: Sexp) : Result<CondClause> =>
-        !isArray(params) || params.length < 2 ? makeFailure(`Expression not of the form (<cexp> <cexp>+): ${JSON.stringify(params, null, 2)}`) :
+        !isArray(params) || params.length < 2 ? makeFailure(`Expression not of the form (cond <cexp> <cexp>+): ${JSON.stringify(params, null, 2)}`) :
         mapv(mapResult(parseL31CExp, params), (cexps: CExp[]) => 
         makeCondClause(cexps[0], rest(cexps)));
     
@@ -343,7 +328,7 @@ const unparseProcExp = (pe: ProcExp): string =>
 const unparseLetExp = (le: LetExp) : string => 
     `(let (${map((b: Binding) => `(${b.var.var} ${unparseL31(b.val)})`, le.bindings).join(" ")}) ${unparseLExps(le.body)})`
 
-const unparseCondExp = (c: CondExp) : string =>
+export const unparseCondExp = (c: CondExp) : string =>
     `(cond ${map((clause: CondClause) => `(${unparseL31(clause.test)} ${map(unparseL31, clause.body).join(" ")})`, c.condClauses).join(" ")} (${map(unparseL31, c.elseClause.body).join(" ")}))`
 
 export const unparseL31 = (exp: Program | Exp): string =>
