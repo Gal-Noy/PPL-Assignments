@@ -23,9 +23,9 @@ import {
   makeAppExp,
   isIfExp,
   Binding,
+  makeProgram,
 } from "./L31-ast";
 import { Result, makeOk } from "../shared/result";
-import { makeProgram } from "./L31-ast";
 import * as R from "ramda";
 
 /*
