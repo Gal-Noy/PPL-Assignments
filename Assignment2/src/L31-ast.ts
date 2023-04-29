@@ -264,19 +264,16 @@ export const parseLitExp = (param: Sexp): Result<LitExp> =>
 
 export const parseCondExp = (params: Sexp[]) : Result<CondExp> => 
     params.length < 2 ? makeFailure(`Expression not of the form (cond <cond-clause>+ <else-clause>): ${JSON.stringify(params, null, 2)}`) :
-        bind(mapResult(parseCondClause, params.slice(0, -1)), (condClauses: CondClause[]) =>
-            bind(parseElseClause(params[params.length-1]), (elseClause: ElseClause) =>
-                makeOk(makeCondExp(condClauses, elseClause))));
+    safe2((condClauses: CondClause[], elseClause: ElseClause) => makeOk(makeCondExp(condClauses, elseClause)))
+        (mapResult(parseCondClause, params.slice(0, -1)), parseElseClause(params[params.length-1]));
     
 export const parseCondClause = (params: Sexp) : Result<CondClause> =>
-        !isArray(params) || params.length < 2 ? makeFailure(`Expression not of the form (<cexp> <cexp>+): ${JSON.stringify(params, null, 2)}`) :
-        mapv(mapResult(parseL31CExp, params), (cexps: CExp[]) => 
-        makeCondClause(cexps[0], rest(cexps)));
+    !isArray(params) || params.length < 2 ? makeFailure(`Expression not of the form (<cexp> <cexp>+): ${JSON.stringify(params, null, 2)}`) :
+    mapv(mapResult(parseL31CExp, params), (cexps: CExp[]) => makeCondClause(cexps[0], rest(cexps)));
     
 export const parseElseClause = (params: Sexp) : Result<ElseClause> =>
-        !isArray(params) || params.length < 2 || params[0] !== "else" ? makeFailure(`Expression not of the form (else <cexp>+): ${JSON.stringify(params, null, 2)}`) :
-        mapv(mapResult(parseL31CExp, params), (cexps: CExp[]) => 
-        makeElseClause(cexps));
+    !isArray(params) || params.length < 2 || params[0] !== "else" ? makeFailure(`Expression not of the form (else <cexp>+): ${JSON.stringify(params, null, 2)}`) :
+    mapv(mapResult(parseL31CExp, params), (cexps: CExp[]) => makeElseClause(cexps));
 
 export const isDottedPair = (sexps: Sexp[]): boolean =>
     sexps.length === 3 && 
