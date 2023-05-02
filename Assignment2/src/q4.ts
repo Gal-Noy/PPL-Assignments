@@ -39,8 +39,10 @@ const rewriteL2ToPythonDefineExp = (exp: DefineExp): string =>
 
 const rewriteL2ToPythonAppExp = (exp: AppExp): string => 
     !isPrimOp(exp.rator) ? `${rewriteL2ToPythonCExp(exp.rator)}(${R.map(rewriteL2ToPythonCExp, exp.rands).join(",")})` :
-    exp.rator.op === "not" ? `(not ${rewriteL2ToPythonCExp(exp.rands[0])})` : 
+    exp.rator.op === "not" ? `(not ${rewriteL2ToPythonCExp(exp.rands[0])})` :
     ["=", "eq?"].includes(exp.rator.op) ? `(${rewriteL2ToPythonCExp(exp.rands[0])} == ${rewriteL2ToPythonCExp(exp.rands[1])})` :
+    exp.rator.op === "number?" ? `(isinstance(${rewriteL2ToPythonCExp(exp.rands[0])}, int))` :
+    exp.rator.op === "boolean?" ? `(isinstance(${rewriteL2ToPythonCExp(exp.rands[0])}, bool))` :
     `(${R.map(rewriteL2ToPythonCExp, exp.rands).join(` ${exp.rator.op} `)})`
 
 const rewriteL2ToPythonCExp = (exp: CExp): string =>
