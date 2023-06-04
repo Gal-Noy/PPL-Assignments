@@ -8,7 +8,7 @@ import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isNum
 import { applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv } from "./TEnv";
 import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
          parseTE, unparseTExp,
-         BoolTExp, NumTExp, StrTExp, TExp, VoidTExp } from "./TExp";
+         BoolTExp, NumTExp, StrTExp, TExp, VoidTExp, parseTExp, isUnionTExp, UnionTExp } from "./TExp";
 import { isEmpty, allT, first, rest, NonEmptyList, List, isNonEmptyList } from '../shared/list';
 import { Result, makeFailure, bind, makeOk, zipWithResult, mapResult } from '../shared/result';
 import { parse as p } from "../shared/parser";
@@ -21,10 +21,27 @@ import { format } from '../shared/format';
 // Exp is only passed for documentation purposes.
 export const checkCompatibleType = (te1: TExp, te2: TExp, exp: Exp): Result<true> =>
   equals(te1, te2) ? makeOk(true) :
+  isUnionTExp(te2) ? checkSubType(te1, te2, exp) :
   bind(unparseTExp(te1), (te1: string) =>
     bind(unparseTExp(te2), (te2: string) =>
         bind(unparse(exp), (exp: string) => 
             makeFailure<true>(`Incompatible types: ${te1} and ${te2} in ${exp}`))));
+
+const checkSubType = (te1: TExp, te2: UnionTExp, exp: Exp): Result<true> =>
+    !isUnionTExp(te1) ? te2.components.some((te: TExp) => checkCompatibleType(te1, te, exp)) ? makeOk(true) :
+        bind(unparseTExp(te1), (te1: string) =>
+            bind(unparseTExp(te2), (te2: string) =>
+                bind(unparse(exp), (exp: string) =>
+                    makeFailure<true>(`Incompatible types: ${te1} and ${te2} in ${exp}`)))) : checkSubTypeUnion(te1, te2, exp);
+
+const checkSubTypeUnion = (te1: UnionTExp, te2: UnionTExp, exp: Exp): Result<true> =>
+    te1.components.every((te: TExp) => checkCompatibleType(te, te2, exp)) ? makeOk(true) :
+        bind(unparseTExp(te1), (te1: string) =>
+            bind(unparseTExp(te2), (te2: string) =>
+                bind(unparse(exp), (exp: string) =>
+                    makeFailure<true>(`Incompatible types: ${te1} and ${te2} in ${exp}`))));
+
+
 
 // Compute the type of L5 AST exps to TE
 // ===============================================

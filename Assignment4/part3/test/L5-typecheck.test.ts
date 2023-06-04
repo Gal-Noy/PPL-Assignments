@@ -138,7 +138,15 @@ describe('L5 Type Checker', () => {
 
     // TODO L51 Test checkCompatibleType with unions
     describe('L5 Test checkCompatibleType with unions', () => {
-        // TODO L51
+        it('check atomic type in union', () => {
+            expect(L5typeof("((lambda ((x : number)) : (union number boolean) x) 5)")).toEqual(makeOk("(union number boolean)"));
+            expect(L5typeof("((lambda ((x : number)) : (union boolean (union string number)) x) 5)")).toEqual(makeOk("(union boolean (union string number))"));
+        });
+        it('check nested type in union', () => {
+            expect(L5typeof("((lambda ((x : (union number boolean))) : (union number boolean) x) 5)")).toEqual(makeOk("(union number boolean)"));
+            expect(L5typeof("((lambda ((x : (union string boolean))) : (union boolean (union string number)) x) 5)")).toEqual(makeOk("(union boolean (union string number))"));
+        });
+        
     });
 
     // TODO L51 Test makeUnion
