@@ -10,7 +10,7 @@ import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeV
          parseTE, unparseTExp,
          BoolTExp, NumTExp, StrTExp, TExp, VoidTExp } from "./TExp";
 import { isEmpty, allT, first, rest, NonEmptyList, List, isNonEmptyList } from '../shared/list';
-import { Result, makeFailure, bind, makeOk, zipWithResult } from '../shared/result';
+import { Result, makeFailure, bind, makeOk, zipWithResult, mapResult } from '../shared/result';
 import { parse as p } from "../shared/parser";
 import { format } from '../shared/format';
 
@@ -218,12 +218,23 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): Result<TExp> => {
 // Purpose: compute the type of a define
 // Typing rule:
 //   (define (var : texp) val)
-// TODO L51 - write the true definition
-export const typeofDefine = (exp: DefineExp, tenv: TEnv): Result<VoidTExp> =>
-    makeFailure("TODO");
+//   if type<var>(tenv) = t
+//      type<val>(tenv) = t
+// then type<(define (var : texp) val)>(tenv) = void
+export const typeofDefine = (exp: DefineExp, tenv: TEnv): Result<VoidTExp> => {
+    const varTE = exp.var.texp;
+    const valTE = exp.val;
+    const constraint = bind(typeofExp(valTE, tenv), (typeOfVal: TExp) => checkCompatibleType(varTE, typeOfVal, exp));
+    return bind(constraint, _ => makeOk(makeVoidTExp()));
+}
 
 // Purpose: compute the type of a program
 // Typing rule:
-// TODO - write the true definition
-export const typeofProgram = (exp: Program, tenv: TEnv): Result<TExp> =>
-    makeFailure("TODO");
+// If   type<exp1>(tenv) = t1
+//      ...
+//      type<expn>(tenv) = tn
+// then type<(L5 exp1 .. expn)>(tenv) = tn
+export const typeofProgram = (exp: Program, tenv: TEnv): Result<TExp> => {
+    const constraints = mapResult((exp) => typeofExp(exp, tenv), exp.exps);
+    return bind(constraints, (constraints: TExp[]) => makeOk(constraints[constraints.length - 1]));
+}

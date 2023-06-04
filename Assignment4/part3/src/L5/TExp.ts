@@ -6,13 +6,13 @@
 ;; <bool-te>      ::= boolean  // bool-te()
 ;; <str-te>       ::= string   // str-te()
 ;; <void-te>      ::= void     // void-te()
-;; <compound-te>  ::= <proc-te> | <tuple-te> | <union-te> TODO L51
+;; <compound-te>  ::= <proc-te> | <tuple-te> | <union-te> L51
 ;; <non-tuple-te> ::= <atomic-te> | <proc-te> | <tvar>
 ;; <proc-te>      ::= [ <tuple-te> -> <non-tuple-te> ] // proc-te(param-tes: list(te), return-te: te)
 ;; <tuple-te>     ::= <non-empty-tuple-te> | <empty-te>
 ;; <non-empty-tuple-te> ::= ( <non-tuple-te> *)* <non-tuple-te> // tuple-te(tes: list(te))
 ;; <empty-te>     ::= Empty
-;; TODO L51
+;;  L51
 ;; <union-te>     ::= (union <texp> <texp>) // union-te(components: list(te))
 ;; <tvar>         ::= a symbol starting with T // tvar(id: Symbol, contents; Box(string|boolean))
 
@@ -26,14 +26,14 @@
 ;; [Empty -> number]
 ;; [Empty -> void]
 
-;; TODO L51
+;; L51
 ;; Support the following type expressions:
 ;; [union number boolean]
 ;; [union [union number boolean] string]
 ;; [Empty -> [union boolean number]]
 ;; [union [T1 -> T1] [Empty -> T1]]
 */
-import { chain, concat, map, uniq } from "ramda";
+import { chain, concat, is, map, uniq } from "ramda";
 import { Sexp } from "s-expression";
 import { isEmpty, isNonEmptyList } from "../shared/list";
 import { isArray, isBoolean, isString } from '../shared/type-predicates';
@@ -43,7 +43,7 @@ import { Result, bind, makeOk, makeFailure, mapResult, mapv } from "../shared/re
 import { parse as p } from "../shared/parser";
 import { format } from "../shared/format";
 
-// TODO L51: Support union types where needed
+// L51: Support union types where needed
 export type TExp =  AtomicTExp | CompoundTExp | TVar;
 export const isTExp = (x: any): x is TExp => isAtomicTExp(x) || isCompoundTExp(x) || isTVar(x);
 
@@ -51,8 +51,8 @@ export type AtomicTExp = NumTExp | BoolTExp | StrTExp | VoidTExp;
 export const isAtomicTExp = (x: any): x is AtomicTExp =>
     isNumTExp(x) || isBoolTExp(x) || isStrTExp(x) || isVoidTExp(x);
 
-export type CompoundTExp = ProcTExp | TupleTExp;
-export const isCompoundTExp = (x: any): x is CompoundTExp => isProcTExp(x) || isTupleTExp(x);
+export type CompoundTExp = ProcTExp | TupleTExp | UnionTExp;
+export const isCompoundTExp = (x: any): x is CompoundTExp => isProcTExp(x) || isTupleTExp(x) || isUnionTExp(x);
 
 export type NonTupleTExp = AtomicTExp | ProcTExp | TVar;
 export const isNonTupleTExp = (x: any): x is NonTupleTExp =>
@@ -96,6 +96,10 @@ export type NonEmptyTupleTExp = { tag: "NonEmptyTupleTExp"; TEs: NonTupleTExp[];
 export const makeNonEmptyTupleTExp = (tes: NonTupleTExp[]): NonEmptyTupleTExp =>
     ({tag: "NonEmptyTupleTExp", TEs: tes});
 export const isNonEmptyTupleTExp = (x: any): x is NonEmptyTupleTExp => x.tag === "NonEmptyTupleTExp";
+
+export type UnionTExp = {tag: "UnionTExp", components: TExp[]};
+export const makeUnionTExp = (components: TExp[]): UnionTExp => ({tag: "UnionTExp", components});
+export const isUnionTExp = (x: any): x is UnionTExp => x.tag === "UnionTExp";
 
 // TVar: Type Variable with support for dereferencing (TVar -> TVar)
 export type TVar = { tag: "TVar"; var: string; contents: Box<undefined | TExp>; };
@@ -163,15 +167,15 @@ export const parseTExp = (texp: Sexp): Result<TExp> =>
     isArray(texp) ? parseCompoundTExp(texp) :
     makeFailure(`Unexpected TExp - ${format(texp)}`);
 
-// TODO L51: Support parsing of union types
+// L51: Support parsing of union types
 /*
 ;; expected structure: (<params> -> <returnte>)
 ;; expected exactly one -> in the list
 ;; We do not accept (a -> b -> c) - must parenthesize
 */
-const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp> => {
+const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp | UnionTExp> => {
     const pos = texps.indexOf('->');
-    return (pos === -1)  ? makeFailure(`Procedure type expression without -> - ${format(texps)}`) :
+    return (pos === -1) ? (texps[0] === 'union' ? parseUnionTExp(texps.slice(1)) : makeFailure(`Procedure type expression without -> - ${format(texps)}`)) :
            (pos === 0) ? makeFailure(`No param types in proc texp - ${format(texps)}`) :
            (pos === texps.length - 1) ? makeFailure(`No return type in proc texp - ${format(texps)}`) :
            (texps.slice(pos + 1).indexOf('->') > -1) ? makeFailure(`Only one -> allowed in a procexp - ${format(texps)}`) :
@@ -179,6 +183,10 @@ const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp> => {
                mapv(parseTExp(texps[pos + 1]), (returnTE: TExp) =>
                     makeProcTExp(args, returnTE)));
 };
+
+const parseUnionTExp = (texps: Sexp[]): Result<UnionTExp> => 
+    texps.length !== 2 ? makeFailure(`Union type expression must have exactly 2 components - ${format(texps)}`) :
+    bind(parseTExp(texps[0]), (te1: TExp) => bind(parseTExp(texps[1]), (te2: TExp) => makeOk(makeUnionTExp([te1, te2]))));
 
 /*
 ;; Expected structure: <te1> [* <te2> ... * <ten>]?
@@ -198,7 +206,7 @@ const parseTupleTExp = (texps: Sexp[]): Result<TExp[]> => {
                                                     mapResult(parseTExp, argTEs));
 }
 
-// TODO L51 support unparsing of union types
+// L51 support unparsing of union types
 /*
 ;; Purpose: Unparse a type expression Texp into its concrete form
 */
@@ -215,6 +223,7 @@ export const unparseTExp = (te: TExp): Result<string> => {
         isStrTExp(x) ? makeOk('string') :
         isVoidTExp(x) ? makeOk('void') :
         isEmptyTVar(x) ? makeOk(x.var) :
+        isUnionTExp(x) ? bind(mapResult(unparseTExp, x.components), (components: string[]) => makeOk(`(union ${components.join(' ')})`)) :
         isTVar(x) ? up(tvarContents(x)) :
         isProcTExp(x) ? bind(unparseTuple(x.paramTEs), (paramTEs: string[]) =>
                             mapv(unparseTExp(x.returnTE), (returnTE: string) =>

@@ -127,9 +127,13 @@ describe('L5 Type Checker', () => {
         });
 	});
 
-    // TODO L51 Typecheck program with define
+    // L51 Typecheck program with define
     describe('L5 Typecheck program with define', () => {
-        // TODO L51
+        it('returns "void" as the type of "define" expressions', () => {
+            expect(L5typeof("(define (foo : number) 5)")).toEqual(makeOk("void"));
+            expect(L5typeof("(define (foo : (number * number -> number)) (lambda((x : number) (y : number)) : number (+ x y)))")).toEqual(makeOk("void"));
+            expect(L5typeof("(define (x : (Empty -> number)) (lambda () : number 1))")).toEqual(makeOk("void"));
+        });
     });
 
     // TODO L51 Test checkCompatibleType with unions

@@ -4,7 +4,7 @@ import { isNumExp, isBoolExp, isVarRef, isPrimOp, isProgram, isDefineExp, isVarD
 import { Result, bind, mapv, isOkT, makeOk, isFailure } from "../src/shared/result";
 import { parse as parseSexp } from "../src/shared/parser";
 import { first, second } from "../src/shared/list";
-import { isProcTExp, parseTE } from "../src/L5/TExp";
+import { isProcTExp, isUnionTExp, parseTE } from "../src/L5/TExp";
 
 const p = (x: string): Result<Exp> => bind(parseSexp(x), (p) => parseL5Exp(p));
 
@@ -87,23 +87,23 @@ describe('L5 Parser', () => {
 
 describe('L5 parseTExp Union Parser', () => {
     it('parseTExp parses simple union expressions', () => {
-        // todo
+        expect(parseTE("(union boolean number)")).toSatisfy(isOkT(isUnionTExp));
     });
 
     it('parseTExp parses embedded union expressions', () => {
-        // todo
+        expect(parseTE("(union string (union boolean number))")).toSatisfy(isOkT(isUnionTExp));
     });
 
     it('parseTExp parses union types in proc argument position', () => {
-        // todo
+        expect(p(`(lambda ((x : (union number (union boolean string)))) : (union string number) (if (number? x) (* x x) "Not a number"))`)).toSatisfy(isOkT(isProcExp));
     });
 
     it('parseTExp parses union types in return type argument position', () => {
-        // todo
+        expect(p(`(lambda ((x : boolean)) : (union number boolean) (if x 1 #t))`)).toSatisfy(isOkT(isProcExp));
     });
 
     it('parseTExp fails to parse union of bad type expressions', () => {
-        // todo
+        expect(parseTE(`(union boolean)`)).not.toSatisfy(isOkT(isUnionTExp));
     });
 
 });
@@ -165,6 +165,7 @@ describe('L5 Unparse', () => {
     });
 
     it('unparses union, nested unions in different positions', () => {
-        // TODO
+        const union = `(lambda ((x : (union number (union boolean string)))) : (union string number) (if (number? x) (* x x) "Not a number"))`;
+        expect(roundTrip(union)).toEqual(makeOk(union));
     })
 });
