@@ -33,13 +33,13 @@
 ;; [Empty -> [union boolean number]]
 ;; [union [T1 -> T1] [Empty -> T1]]
 */
-import { chain, concat, is, map, uniq } from "ramda";
+import { chain, concat, is, map, uniq, sort, union } from "ramda";
 import { Sexp } from "s-expression";
 import { isEmpty, isNonEmptyList } from "../shared/list";
 import { isArray, isBoolean, isString } from '../shared/type-predicates';
 import { makeBox, setBox, unbox, Box } from '../shared/box';
 import { cons, first, rest } from '../shared/list';
-import { Result, bind, makeOk, makeFailure, mapResult, mapv } from "../shared/result";
+import { Result, bind, makeOk, makeFailure, mapResult, mapv, safe2 } from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { format } from "../shared/format";
 
@@ -185,8 +185,10 @@ const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp | UnionTExp> => {
 };
 
 const parseUnionTExp = (texps: Sexp[]): Result<UnionTExp> => 
-    texps.length !== 2 ? makeFailure(`Union type expression must have exactly 2 components - ${format(texps)}`) :
-    bind(parseTExp(texps[0]), (te1: TExp) => bind(parseTExp(texps[1]), (te2: TExp) => makeOk(makeUnionTExp([te1, te2]))));
+    texps.length !== 2 ? makeFailure(`Union type expression must have exactly 2 components - ${format(texps)}`) :    
+    bind(parseTExp(texps[0]), (te1: TExp) => bind(parseTExp(texps[1]), (te2: TExp) =>
+        makeOk(makeUnionTExp(sort((t_1 : TExp, t_2 : TExp) => t_1.tag < t_2.tag ? -1 : t_1.tag > t_2.tag ? 1 : 0,
+            union(isUnionTExp(te1) ? te1.components : [te1], isUnionTExp(te2) ? te2.components : [te2]))))));
 
 /*
 ;; Expected structure: <te1> [* <te2> ... * <ten>]?
@@ -223,7 +225,7 @@ export const unparseTExp = (te: TExp): Result<string> => {
         isStrTExp(x) ? makeOk('string') :
         isVoidTExp(x) ? makeOk('void') :
         isEmptyTVar(x) ? makeOk(x.var) :
-        isUnionTExp(x) ? bind(mapResult(unparseTExp, x.components), (components: string[]) => makeOk(`(union ${components.join(' ')})`)) :
+        isUnionTExp(x) ? unparseUnionTExp(x.components) :
         isTVar(x) ? up(tvarContents(x)) :
         isProcTExp(x) ? bind(unparseTuple(x.paramTEs), (paramTEs: string[]) =>
                             mapv(unparseTExp(x.returnTE), (returnTE: string) =>
@@ -239,6 +241,13 @@ export const unparseTExp = (te: TExp): Result<string> => {
                                           isArray(x) ? `(${x.join(' ')})` :
                                           x);
 }
+
+const unparseUnionTExp = (components: TExp[]): Result<string> =>
+    components.length < 2 ? bind(unparseTExp(components[0]), (te: string) => makeOk(te)) :
+    components.length === 2 ? safe2((te1: string, te2: string) =>
+        makeOk(`(union ${te1} ${te2})`))(unparseTExp(components[0]), unparseTExp(components[1])) :
+    bind(unparseUnionTExp(components.slice(2)), (te: string) => safe2((te1: string, te2: string) =>
+        makeOk(`(union ${te} (union ${te1} ${te2}))`))(unparseTExp(components[0]), unparseTExp(components[1])));
 
 // No need to change this for Union
 // ============================================================

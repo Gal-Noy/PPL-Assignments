@@ -1,10 +1,10 @@
 import { isTypedArray } from 'util/types';
 import { isProgram, parseL5, Program } from '../src/L5/L5-ast';
-import { typeofProgram, L5typeof, checkCompatibleType } from '../src/L5/L5-typecheck';
+import { typeofProgram, L5typeof, checkCompatibleType, makeUnion } from '../src/L5/L5-typecheck';
 import { applyTEnv } from '../src/L5/TEnv';
 import { isNumTExp, isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeTVar, 
-         makeVoidTExp, parseTE, unparseTExp, TExp, isTExp } from '../src/L5/TExp';
-import { makeOk, isOkT, bind, mapv, isFailure, Result } from '../src/shared/result';
+         makeVoidTExp, parseTE, unparseTExp, TExp, isTExp, makeStrTExp } from '../src/L5/TExp';
+import { makeOk, isOkT, bind, mapv, isFailure, Result, makeFailure } from '../src/shared/result';
 
 describe('L5 Type Checker', () => {
     describe('parseTE', () => {
@@ -139,38 +139,53 @@ describe('L5 Type Checker', () => {
     // TODO L51 Test checkCompatibleType with unions
     describe('L5 Test checkCompatibleType with unions', () => {
         it('check atomic type in union', () => {
-            expect(L5typeof("((lambda ((x : number)) : (union number boolean) x) 5)")).toEqual(makeOk("(union number boolean)"));
-            expect(L5typeof("((lambda ((x : number)) : (union boolean (union string number)) x) 5)")).toEqual(makeOk("(union boolean (union string number))"));
+            expect(L5typeof("((lambda ((x : number)) : (union number boolean) x) 5)")).toEqual(makeOk("(union boolean number)"));
+            expect(L5typeof("((lambda ((x : number)) : (union boolean (union string number)) x) 5)")).toEqual(makeOk("(union string (union boolean number))"));
         });
         it('check nested type in union', () => {
-            expect(L5typeof("((lambda ((x : (union number boolean))) : (union number boolean) x) 5)")).toEqual(makeOk("(union number boolean)"));
-            expect(L5typeof("((lambda ((x : (union string boolean))) : (union boolean (union string number)) x) 5)")).toEqual(makeOk("(union boolean (union string number))"));
+            expect(L5typeof("((lambda ((x : (union number boolean))) : (union boolean number) x) 5)")).toEqual(makeOk("(union boolean number)"));
+            expect(L5typeof("(lambda ((x : (union string boolean))) : (union boolean (union string number)) x)")).toEqual(makeOk("((union boolean string) -> (union string (union boolean number)))"));
         });
         
     });
 
-    // TODO L51 Test makeUnion
     describe('L5 Test makeUnion', () => {
         // makeUnion( number, boolean) -> union((number, boolean))
+        expect(unparseTExp(makeUnion(makeNumTExp(), makeBoolTExp()))).toEqual(makeOk("(union boolean number)"));
         // makeUnion( union(number, boolean), string) -> union(boolean, number, string)
+        expect(unparseTExp(makeUnion(makeUnion(makeNumTExp(), makeBoolTExp()), makeStrTExp()))).toEqual(makeOk("(union string (union boolean number))"));
         // makeUnion( union(number, boolean), union(boolean, string)) -> union(boolean, number, string)
+        expect(unparseTExp(makeUnion(makeUnion(makeNumTExp(), makeBoolTExp()), makeUnion(makeBoolTExp(), makeStrTExp())))).toEqual(makeOk("(union string (union boolean number))"));
         // makeUnion( number, union(number, boolean)) -> union(boolean, number)
-     
-        // TODO L51
+        expect(unparseTExp(makeUnion(makeNumTExp(), makeUnion(makeNumTExp(), makeBoolTExp())))).toEqual(makeOk("(union boolean number)"));
     });
     
-    // TODO L51 Test typeOfIf with union in all relevant positions
     describe('L5 Test typeOfIf with union in all relevant positions', () => {
         // typeOfIf( (if #t 1 #t) ) -> union(boolean, number)
+        expect(L5typeof("(if #t 1 #t)")).toEqual(makeOk("(union boolean number)"));
         // typeOfIf( (if #t 1 2) ) -> number
+        expect(L5typeof("(if #t 1 2)")).toEqual(makeOk("number"));
         // typeOfIf( (if #t (if #f 1 #t) "ok") ) -> union(boolean, number, string)
+        expect(L5typeof(`(if #t (if #f 1 #t) "ok")`)).toEqual(makeOk("(union string (union boolean number))"));
         // typeOfIf( (if 1 2 3) ) -> failure
+        expect(L5typeof("(if 1 2 3)")).toEqual(makeFailure("Incompatible types: number and boolean in (if 1 2 3)"));
     });
 
-    // TODO L51 Test checkCompatibleType with unions in arg positions of Procedures
     describe('L5 Test checkCompatibleType with unions in arg positions of Procedures', () => {
-        // TODO L51
-        // Implement the test for the examples given in the document of the assignment (3.2.4)
+        expect(L5typeof("((lambda ((x : (union number boolean))) : (union boolean number) x) 5)")).toEqual(makeOk("(union boolean number)"));
+        expect(L5typeof(`((lambda ((x : (union boolean string))) : number 1) (if #t "ok" #f))`)).toEqual(makeOk("number"));
+        expect(L5typeof(`(
+                        (lambda ((t : (number -> string))) : (union boolean string) (t 1))
+                        (lambda ((x : (union number boolean))) : string "F OK")
+                        )`)).toEqual(makeOk("(union boolean string)"));
+        expect(L5typeof(`(
+                        (lambda ((t : ((union number boolean) -> string))) : (union number string) (t #t))
+                        (lambda ((x : (union number boolean))) : string "F OK")
+                        )`)).toEqual(makeOk("(union number string)"));
+        expect(L5typeof(`(
+                        (lambda ((t : ((union number boolean) -> (union boolean string)))) : (union number (union boolean string)) (t #t))
+                        (lambda ((x : (union number boolean))) : boolean #f)
+                        )`)).toEqual(makeOk("(union string (union boolean number))"));
     });
 
 });

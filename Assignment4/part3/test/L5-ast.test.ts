@@ -165,7 +165,7 @@ describe('L5 Unparse', () => {
     });
 
     it('unparses union, nested unions in different positions', () => {
-        const union = `(lambda ((x : (union number (union boolean string)))) : (union string number) (if (number? x) (* x x) "Not a number"))`;
+        const union = `(lambda ((x : (union string (union boolean number)))) : (union number string) (if (number? x) (* x x) \"Not a number\"))`;
         expect(roundTrip(union)).toEqual(makeOk(union));
     })
 });
