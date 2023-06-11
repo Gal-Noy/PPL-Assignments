@@ -1,6 +1,6 @@
 // L5-typecheck
 // ========================================================
-import { equals, map, zipWith, union, sort, forEach } from 'ramda';
+import { equals, map, zipWith, union, sort } from 'ramda';
 import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isNumExp,
          isPrimOp, isProcExp, isProgram, isStrExp, isVarRef, parseL5Exp, unparse,
          AppExp, BoolExp, DefineExp, Exp, IfExp, LetrecExp, LetExp, NumExp,
@@ -44,15 +44,12 @@ const checkSubTypeUnion = (te1: UnionTExp, te2: UnionTExp, exp: Exp): Result<tru
                     makeFailure<true>(`Incompatible types: ${te1} and ${te2} in ${exp}`))));
 
 const checkCompatibleProcType = (te1: ProcTExp, te2: ProcTExp, exp: Exp): Result<true> => {
-    console.log(te1, te2, exp)
     if (te1.paramTEs.length !== te2.paramTEs.length)
         return makeFailure(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)} in ${unparse(exp)}`);
     const constraint1 = checkCompatibleType(te1.returnTE, te2.returnTE, exp);
     const constraint2 = te2.paramTEs.every((te: TExp, i: number) => isOk(checkCompatibleType(te, te1.paramTEs[i], exp)));
     return bind(constraint1, (_) => constraint2 ? makeOk(true) :
             makeFailure(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)} in ${unparse(exp)}`));
-    
-
 }
 
 
@@ -135,27 +132,21 @@ export const typeofPrim = (p: PrimOp): Result<TExp> =>
     (p.op === 'newline') ? parseTE('(Empty -> void)') :
     makeFailure(`Primitive not yet implemented: ${p.op}`);
 
-export const makeUnion = (te1: TExp, te2: TExp): UnionTExp =>
-    makeUnionTExp(sort((t_1 : TExp, t_2 : TExp) => t_1.tag < t_2.tag ? -1 : t_1.tag > t_2.tag ? 1 : 0,
-        union(isUnionTExp(te1) ? te1.components : [te1], isUnionTExp(te2) ? te2.components : [te2])));
-
-// const components = sort((t_1 : TExp, t_2 : TExp) => t_1.tag < t_2.tag ? -1 : t_1.tag > t_2.tag ? 1 : 0,
-// union(isUnionTExp(te1) ? te1.components : [te1], isUnionTExp(te2) ? te2.components : [te2]));
-// return components.length > 1 ? makeUnionTExp(components) : components[0];
+export const makeUnion = (te1: TExp, te2: TExp): TExp => {
+    const components = sort((t_1 : TExp, t_2 : TExp) => t_1.tag < t_2.tag ? -1 : t_1.tag > t_2.tag ? 1 : 0,
+    union(isUnionTExp(te1) ? te1.components : [te1], isUnionTExp(te2) ? te2.components : [te2]));
+    return components.length > 1 ? makeUnionTExp(components) : components[0];
+}
 
 
-
-// TODO L51
+// L51
 // Purpose: compute the type of an if-exp
 // Typing rule:
 //   if type<test>(tenv) = boolean
 //      type<then>(tenv) = t1
 //      type<else>(tenv) = t2
 // then type<(if test then else)>(tenv) = (union t1 t2)
-let a = 0
 export const typeofIf = (ifExp: IfExp, tenv: TEnv): Result<TExp> => {
-    a++
-    console.log(ifExp, a)
     const testTE = typeofExp(ifExp.test, tenv);
     const thenTE = typeofExp(ifExp.then, tenv);
     const altTE = typeofExp(ifExp.alt, tenv);

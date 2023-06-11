@@ -186,10 +186,9 @@ const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp | UnionTExp> => {
 
 const parseUnionTExp = (texps: Sexp[]): Result<UnionTExp> => 
     texps.length !== 2 ? makeFailure(`Union type expression must have exactly 2 components - ${format(texps)}`) :    
-    bind(parseTExp(texps[0]), (te1: TExp) => bind(parseTExp(texps[1]), (te2: TExp) =>
-        makeOk(makeUnionTExp(sort((t_1 : TExp, t_2 : TExp) => t_1.tag < t_2.tag ? -1 : t_1.tag > t_2.tag ? 1 : 0,
-            union(isUnionTExp(te1) ? te1.components : [te1], isUnionTExp(te2) ? te2.components : [te2]))))));
-
+    safe2((te1: TExp, te2: TExp) => makeOk(makeUnionTExp(sort((t_1 : TExp, t_2 : TExp) => t_1.tag < t_2.tag ? -1 : t_1.tag > t_2.tag ? 1 :
+        0, union(isUnionTExp(te1) ? te1.components : [te1], isUnionTExp(te2) ? te2.components : [te2])))))(parseTExp(texps[0]), parseTExp(texps[1]))
+    
 /*
 ;; Expected structure: <te1> [* <te2> ... * <ten>]?
 ;; Or: Empty

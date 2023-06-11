@@ -131,12 +131,13 @@ describe('L5 Type Checker', () => {
     describe('L5 Typecheck program with define', () => {
         it('returns "void" as the type of "define" expressions', () => {
             expect(L5typeof("(define (foo : number) 5)")).toEqual(makeOk("void"));
+            expect(L5typeof("(L5 (define (a : number) 1) (+ a 1) )")).toEqual(makeOk("number"));
             expect(L5typeof("(define (foo : (number * number -> number)) (lambda((x : number) (y : number)) : number (+ x y)))")).toEqual(makeOk("void"));
             expect(L5typeof("(define (x : (Empty -> number)) (lambda () : number 1))")).toEqual(makeOk("void"));
         });
     });
 
-    // TODO L51 Test checkCompatibleType with unions
+    // L51 Test checkCompatibleType with unions
     describe('L5 Test checkCompatibleType with unions', () => {
         it('check atomic type in union', () => {
             expect(L5typeof("((lambda ((x : number)) : (union number boolean) x) 5)")).toEqual(makeOk("(union boolean number)"));
@@ -187,5 +188,4 @@ describe('L5 Type Checker', () => {
                         (lambda ((x : (union number boolean))) : boolean #f)
                         )`)).toEqual(makeOk("(union string (union boolean number))"));
     });
-
 });
