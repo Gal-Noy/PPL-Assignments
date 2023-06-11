@@ -141,11 +141,11 @@ describe('L5 Type Checker', () => {
     describe('L5 Test checkCompatibleType with unions', () => {
         it('check atomic type in union', () => {
             expect(L5typeof("((lambda ((x : number)) : (union number boolean) x) 5)")).toEqual(makeOk("(union boolean number)"));
-            expect(L5typeof("((lambda ((x : number)) : (union boolean (union string number)) x) 5)")).toEqual(makeOk("(union string (union boolean number))"));
+            expect(L5typeof("((lambda ((x : number)) : (union boolean (union string number)) x) 5)")).toEqual(makeOk("(union boolean (union number string))"));
         });
         it('check nested type in union', () => {
             expect(L5typeof("((lambda ((x : (union number boolean))) : (union boolean number) x) 5)")).toEqual(makeOk("(union boolean number)"));
-            expect(L5typeof("(lambda ((x : (union string boolean))) : (union boolean (union string number)) x)")).toEqual(makeOk("((union boolean string) -> (union string (union boolean number)))"));
+            expect(L5typeof("(lambda ((x : (union string boolean))) : (union boolean (union string number)) x)")).toEqual(makeOk("((union boolean string) -> (union boolean (union number string)))"));
         });
         
     });
@@ -154,9 +154,9 @@ describe('L5 Type Checker', () => {
         // makeUnion( number, boolean) -> union((number, boolean))
         expect(unparseTExp(makeUnion(makeNumTExp(), makeBoolTExp()))).toEqual(makeOk("(union boolean number)"));
         // makeUnion( union(number, boolean), string) -> union(boolean, number, string)
-        expect(unparseTExp(makeUnion(makeUnion(makeNumTExp(), makeBoolTExp()), makeStrTExp()))).toEqual(makeOk("(union string (union boolean number))"));
+        expect(unparseTExp(makeUnion(makeUnion(makeNumTExp(), makeBoolTExp()), makeStrTExp()))).toEqual(makeOk("(union boolean (union number string))"));
         // makeUnion( union(number, boolean), union(boolean, string)) -> union(boolean, number, string)
-        expect(unparseTExp(makeUnion(makeUnion(makeNumTExp(), makeBoolTExp()), makeUnion(makeBoolTExp(), makeStrTExp())))).toEqual(makeOk("(union string (union boolean number))"));
+        expect(unparseTExp(makeUnion(makeUnion(makeNumTExp(), makeBoolTExp()), makeUnion(makeBoolTExp(), makeStrTExp())))).toEqual(makeOk("(union boolean (union number string))"));
         // makeUnion( number, union(number, boolean)) -> union(boolean, number)
         expect(unparseTExp(makeUnion(makeNumTExp(), makeUnion(makeNumTExp(), makeBoolTExp())))).toEqual(makeOk("(union boolean number)"));
     });
@@ -167,7 +167,7 @@ describe('L5 Type Checker', () => {
         // typeOfIf( (if #t 1 2) ) -> number
         expect(L5typeof("(if #t 1 2)")).toEqual(makeOk("number"));
         // typeOfIf( (if #t (if #f 1 #t) "ok") ) -> union(boolean, number, string)
-        expect(L5typeof(`(if #t (if #f 1 #t) "ok")`)).toEqual(makeOk("(union string (union boolean number))"));
+        expect(L5typeof(`(if #t (if #f 1 #t) "ok")`)).toEqual(makeOk("(union boolean (union number string))"));
         // typeOfIf( (if 1 2 3) ) -> failure
         expect(L5typeof("(if 1 2 3)")).toEqual(makeFailure("Incompatible types: number and boolean in (if 1 2 3)"));
     });
@@ -186,6 +186,6 @@ describe('L5 Type Checker', () => {
         expect(L5typeof(`(
                         (lambda ((t : ((union number boolean) -> (union boolean string)))) : (union number (union boolean string)) (t #t))
                         (lambda ((x : (union number boolean))) : boolean #f)
-                        )`)).toEqual(makeOk("(union string (union boolean number))"));
+                        )`)).toEqual(makeOk("(union boolean (union number string))"));
     });
 });

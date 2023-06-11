@@ -245,8 +245,8 @@ const unparseUnionTExp = (components: TExp[]): Result<string> =>
     components.length < 2 ? bind(unparseTExp(components[0]), (te: string) => makeOk(te)) :
     components.length === 2 ? safe2((te1: string, te2: string) =>
         makeOk(`(union ${te1} ${te2})`))(unparseTExp(components[0]), unparseTExp(components[1])) :
-    bind(unparseUnionTExp(components.slice(2)), (te: string) => safe2((te1: string, te2: string) =>
-        makeOk(`(union ${te} (union ${te1} ${te2}))`))(unparseTExp(components[0]), unparseTExp(components[1])));
+    bind(unparseTExp(components[0]), (te1: string) => safe2((te2: string, te: string) =>
+        makeOk(`(union ${te1} (union ${te2} ${te}))`))(unparseTExp(components[1]), unparseUnionTExp(components.slice(2))));
 
 // No need to change this for Union
 // ============================================================
